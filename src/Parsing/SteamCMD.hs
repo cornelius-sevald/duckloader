@@ -10,9 +10,6 @@ import qualified Data.ByteString.Lazy          as L
 import           Path
 import           Text.Parsec
 
-safeParseAbsDir :: FilePath -> Maybe (Path Abs Dir)
-safeParseAbsDir = parseAbsDir
-
 steamCMDoutput = do
   initial
   login
