@@ -7,15 +7,15 @@ module DuckLoader
 where
 
 import           System.Exit
-import           System.Process                 ( readProcessWithExitCode )
+import           System.Process.Typed
 import           System.Directory               ( listDirectory )
 import           Control.Error.Util
 import           Control.Monad.Except
 import           Control.Monad.Writer
-import           Control.Monad.Trans
-import           Control.Monad.IO.Class
 import           Data.List                      ( isSuffixOf )
 import           Data.EitherR                   ( fmapL )
+import qualified Data.ByteString.Lazy          as L
+import           Data.ByteString.Builder
 
 import           Path
 import qualified Text.Parsec                   as Parsec
@@ -40,13 +40,14 @@ data DuckError
  deriving Show
 
 type DuckLog = [String]
-type DuckIDs = String
-type DuckPlaylist = String
+type DuckIDs = L.ByteString
+type DuckPlaylist = L.ByteString
 
-args :: [String] -> [String]
+args :: [WID.WorkshopID] -> [String]
 args wids =
   ["+login", "anonymous"]
-    ++ foldMap (\wid -> ["+workshop_download_item", "312530"] ++ [wid]) wids
+    ++ foldMap (\wid -> ["+workshop_download_item", "312530"] ++ [show wid])
+               wids
     ++ ["+quit"]
 
 levelPath :: MonadIO m => Path Abs Dir -> ExceptT DuckError m (Path Abs File)
@@ -65,13 +66,17 @@ levelPath dir = do
 
 playlist :: [Path Abs File] -> DuckPlaylist
 playlist levels =
-  "<playlist>\n"
-    ++ foldMap
+  toLazyByteString
+    $  stringUtf8 "<playlist>\n"
+    <> foldMap
          (\lev ->
-           "  <element>" ++ playlistPrefix ++ toFilePath lev ++ "</element>\n"
+           stringUtf8 "  <element>"
+             <> stringUtf8 playlistPrefix
+             <> stringUtf8 (toFilePath lev)
+             <> stringUtf8 "</element>\n"
          )
          levels
-    ++ "</playlist>"
+    <> stringUtf8 "</playlist>"
 
 _playlistFromIDs
   :: DuckIDs -> ExceptT DuckError (WriterT DuckLog IO) DuckPlaylist
@@ -80,7 +85,7 @@ _playlistFromIDs contents = do
   wids <- liftEither $ fmapL ParseError $ WID.parseWorkshopIDs contents
   let cmdArgs = args wids
   tell ["Running steamcmd with args: '" ++ unwords cmdArgs ++ "'."]
-  (exit, out, _) <- liftIO $ readProcessWithExitCode steamcmd cmdArgs ""
+  (exit, out, _) <- liftIO $ readProcess $ proc steamcmd cmdArgs
   case exit of
     ExitFailure e -> throwError
       (SteamCMDError $ "steamcmd exited with error code " ++ show e ++ ".")

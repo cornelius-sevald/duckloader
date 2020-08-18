@@ -5,6 +5,7 @@ where
 
 import           Control.Monad                  ( void )
 import           Data.Maybe                     ( fromMaybe )
+import qualified Data.ByteString.Lazy          as L
 
 import           Path
 import           Text.Parsec
@@ -45,5 +46,5 @@ path = do
 
 eol = endOfLine
 
-parseSteamCMD :: String -> Either ParseError [Path Abs Dir]
+parseSteamCMD :: L.ByteString -> Either ParseError [Path Abs Dir]
 parseSteamCMD = parse steamCMDoutput "(steamcmd)"

@@ -1,11 +1,16 @@
 module Parsing.WorkshopID
-  ( parseWorkshopIDs
+  ( WorkshopID
+  , parseWorkshopIDs
   )
 where
 
 import           Control.Monad                  ( void )
+import           Numeric.Natural
+import qualified Data.ByteString.Lazy          as L
 
 import           Text.Parsec
+
+type WorkshopID = Natural
 
 workshopIDsFile = concat <$> many1 line
 
@@ -17,7 +22,7 @@ widLine = do
   comment <|> (void eol)
   return [wid]
 
-workshopID = many1 digit
+workshopID = read <$> many1 digit
 
 urlPrefix = string "https://steamcommunity.com/sharedfiles/filedetails/?id="
 
@@ -27,5 +32,5 @@ comment = void $ do
 
 eol = endOfLine
 
-parseWorkshopIDs :: String -> Either ParseError [String]
+parseWorkshopIDs :: L.ByteString -> Either ParseError [WorkshopID]
 parseWorkshopIDs = parse workshopIDsFile "(workshopIDs)"
