@@ -3,7 +3,7 @@ module Parsing.WorkshopID
   )
 where
 
-import Control.Monad (void)
+import           Control.Monad                  ( void )
 
 import           Text.Parsec
 
