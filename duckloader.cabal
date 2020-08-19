@@ -27,6 +27,9 @@ library
         mtl                  ==2.2.*
 
 executable duckloader
+    ghc-options:
+        -O3
+        -threaded
     main-is: Main.hs
     other-modules:
         Parsing.WorkshopID
